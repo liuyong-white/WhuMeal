@@ -1,0 +1,11 @@
+* text=auto
+*.cs text
+*.sln text
+*.csproj text
+*.json text
+*.sql text
+*.md text
+*.ps1 text
+*.wav binary
+*.png binary
+*.db binary

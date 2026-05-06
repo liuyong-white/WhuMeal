@@ -1,2 +1,7 @@
-.arts
-.codeartsdoer
+bin/
+obj/
+*.db
+*.user
+*.suo
+.vs/
+nul
