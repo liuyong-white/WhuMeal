@@ -14,7 +14,7 @@ namespace DailyMeal.Helper
         public static (bool isValid, string message) ValidatePrice(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
-                return (false, "消费价格不能为空");
+                return (true, "");
             if (!Regex.IsMatch(input, PricePattern))
                 return (false, "请输入有效的消费价格，最多保留2位小数");
             return (true, "");
@@ -23,7 +23,7 @@ namespace DailyMeal.Helper
         public static (bool isValid, string message) ValidateCalorie(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
-                return (false, "热量数值不能为空");
+                return (true, "");
             if (!Regex.IsMatch(input, CaloriePattern))
                 return (false, "请输入有效的热量数值（非负数）");
             return (true, "");

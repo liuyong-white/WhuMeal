@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using DailyMeal.BLL;
 using DailyMeal.Model;
+using DailyMeal.UI.Theme;
 
 namespace DailyMeal.UI
 {
@@ -16,11 +17,10 @@ namespace DailyMeal.UI
         private Label _lblCalorie;
         private UserControl _currentForm;
         private StatisticBLL _statisticBll = new StatisticBLL();
+        private Button[] _navButtons;
+        private int _currentNavIndex = -1;
 
-        private readonly string[] _navNames = { "智能选餐", "数据管理", "统计分析", "趣味报告", "饭搭子管理", "设置" };
-        private readonly Color PrimaryColor = Color.FromArgb(0x1A, 0x6B, 0x3C);
-        private readonly Color BackgroundColor = Color.FromArgb(0xFF, 0xF8, 0xE7);
-        private readonly Color AccentColor = Color.FromArgb(0xF5, 0xA6, 0x23);
+        private readonly string[] _navNames = { "随机摇号", "食堂档案", "吃货统计", "学期回顾", "饭搭子", "系统设置" };
 
         public MainForm()
         {
@@ -35,13 +35,13 @@ namespace DailyMeal.UI
             this.Size = new Size(1024, 768);
             this.MinimumSize = new Size(800, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = BackgroundColor;
+            this.BackColor = AppTheme.Background;
 
             _navPanel = new Panel
             {
                 Dock = DockStyle.Left,
                 Width = 160,
-                BackColor = PrimaryColor,
+                BackColor = AppTheme.Primary,
                 Padding = new Padding(10, 20, 10, 10)
             };
 
@@ -49,7 +49,7 @@ namespace DailyMeal.UI
             {
                 Text = "珞珈食记",
                 ForeColor = Color.White,
-                Font = new Font("微软雅黑", 16, FontStyle.Bold),
+                Font = AppTheme.TitleFont,
                 AutoSize = true,
                 Location = new Point(20, 20)
             };
@@ -61,29 +61,29 @@ namespace DailyMeal.UI
             {
                 Dock = DockStyle.Top,
                 Height = 80,
-                BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1),
+                BackColor = AppTheme.Surface,
                 Padding = new Padding(15)
             };
 
             var overviewTitle = new Label
             {
                 Text = "今日概览",
-                Font = new Font("微软雅黑", 12, FontStyle.Bold),
-                ForeColor = PrimaryColor,
+                Font = AppTheme.SubtitleFont,
+                ForeColor = AppTheme.Primary,
                 Location = new Point(15, 10),
                 AutoSize = true
             };
 
-            _lblMealCount = new Label { Text = "就餐次数: 0", Font = new Font("微软雅黑", 9f), Location = new Point(15, 40), AutoSize = true };
-            _lblExpense = new Label { Text = "消费: ¥0.00", Font = new Font("微软雅黑", 9f), Location = new Point(150, 40), AutoSize = true };
-            _lblCalorie = new Label { Text = "摄入热量: 0千卡", Font = new Font("微软雅黑", 9f), Location = new Point(300, 40), AutoSize = true };
+            _lblMealCount = new Label { Text = "就餐次数: 0", Font = AppTheme.CaptionFont, ForeColor = AppTheme.TextSecondary, Location = new Point(15, 40), AutoSize = true };
+            _lblExpense = new Label { Text = "消费: ¥0.00", Font = AppTheme.CaptionFont, ForeColor = AppTheme.TextSecondary, Location = new Point(150, 40), AutoSize = true };
+            _lblCalorie = new Label { Text = "摄入热量: 0千卡", Font = AppTheme.CaptionFont, ForeColor = AppTheme.TextSecondary, Location = new Point(300, 40), AutoSize = true };
 
             _overviewPanel.Controls.AddRange(new Control[] { overviewTitle, _lblMealCount, _lblExpense, _lblCalorie });
 
             _contentPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = BackgroundColor,
+                BackColor = AppTheme.Background,
                 Padding = new Padding(10)
             };
 
@@ -96,6 +96,7 @@ namespace DailyMeal.UI
 
         private void SetupNavigation()
         {
+            _navButtons = new Button[_navNames.Length];
             int y = 70;
             for (int i = 0; i < _navNames.Length; i++)
             {
@@ -108,19 +109,20 @@ namespace DailyMeal.UI
                     Location = new Point(10, y),
                     ForeColor = Color.White,
                     BackColor = Color.Transparent,
-                    Font = new Font("微软雅黑", 10f),
+                    Font = AppTheme.BodyFont,
                     Tag = i,
                     Cursor = Cursors.Hand
                 };
-                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(0x15, 0x5A, 0x32);
-                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(0x10, 0x48, 0x28);
+                btn.FlatAppearance.MouseOverBackColor = AppTheme.PrimaryLight;
+                btn.FlatAppearance.MouseDownBackColor = AppTheme.PrimaryDark;
                 btn.Click += NavButton_Click;
                 _navPanel.Controls.Add(btn);
+                _navButtons[i] = btn;
                 y += 50;
             }
         }
 
-        private async void NavButton_Click(object sender, EventArgs e)
+        private void NavButton_Click(object sender, EventArgs e)
         {
             int index = (int)((Button)sender).Tag;
             SwitchToForm(index);
@@ -128,6 +130,16 @@ namespace DailyMeal.UI
 
         public void SwitchToForm(int index)
         {
+            if (_currentNavIndex >= 0 && _currentNavIndex < _navButtons.Length)
+            {
+                _navButtons[_currentNavIndex].BackColor = Color.Transparent;
+                _navButtons[_currentNavIndex].Font = AppTheme.BodyFont;
+            }
+
+            _currentNavIndex = index;
+            _navButtons[index].BackColor = AppTheme.Accent;
+            _navButtons[index].Font = new Font("微软雅黑", 10f, FontStyle.Bold);
+
             if (_currentForm != null)
             {
                 _contentPanel.Controls.Remove(_currentForm);

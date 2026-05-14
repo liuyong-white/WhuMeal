@@ -45,7 +45,6 @@ namespace DailyMeal.BLL
                     progress?.Report(new RollProgressInfo
                     {
                         CurrentName = stall.StallName,
-                        CurrentPhoto = stall.StallPhoto,
                         CurrentIndex = currentIndex
                     });
 
@@ -68,7 +67,6 @@ namespace DailyMeal.BLL
                     progress?.Report(new RollProgressInfo
                     {
                         CurrentName = stall.StallName,
-                        CurrentPhoto = stall.StallPhoto,
                         CurrentIndex = currentIndex
                     });
                     await Task.Delay(200, ct);
@@ -78,7 +76,6 @@ namespace DailyMeal.BLL
                 progress?.Report(new RollProgressInfo
                 {
                     CurrentName = target.StallName,
-                    CurrentPhoto = target.StallPhoto,
                     CurrentIndex = targetIndex
                 });
             }, ct);

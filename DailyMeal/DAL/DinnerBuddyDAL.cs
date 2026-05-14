@@ -59,10 +59,10 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                var exists = conn.ExecuteScalar<bool>("SELECT COUNT(*) > 0 FROM DinnerBuddy WHERE IsSystem = 1 AND Name = '自己'");
+                var exists = conn.ExecuteScalar<bool>("SELECT COUNT(*) > 0 FROM DinnerBuddy WHERE IsSystem = 1 AND Name = '老己'");
                 if (!exists)
                 {
-                    conn.Execute("INSERT INTO DinnerBuddy (Name, Photo, IsSystem) VALUES ('自己', '', 1)");
+                    conn.Execute("INSERT INTO DinnerBuddy (Name, Photo, IsSystem) VALUES ('老己', '', 1)");
                 }
             }
         }
@@ -72,7 +72,7 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                return conn.ExecuteScalar<bool>("SELECT COUNT(*) > 0 FROM DinnerBuddy WHERE Id = @Id AND IsSystem = 1 AND Name = '自己'", new { Id = id });
+                return conn.ExecuteScalar<bool>("SELECT COUNT(*) > 0 FROM DinnerBuddy WHERE Id = @Id AND IsSystem = 1 AND Name = '老己'", new { Id = id });
             }
         }
     }

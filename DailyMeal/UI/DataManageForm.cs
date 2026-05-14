@@ -8,6 +8,7 @@ using DailyMeal.BLL;
 using DailyMeal.DAL;
 using DailyMeal.Helper;
 using DailyMeal.Model;
+using DailyMeal.UI.Theme;
 
 namespace DailyMeal.UI
 {
@@ -52,7 +53,8 @@ namespace DailyMeal.UI
             var btnCancel = new Button { Text = "取消", Location = new Point(350, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat };
             topPanel.Controls.AddRange(new Control[] { lblName, txtName, btnSave, btnCancel });
 
-            _gvCanteen = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, SelectionMode = DataGridViewSelectionMode.FullRowSelect, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
+            _gvCanteen = new DataGridView { Dock = DockStyle.Fill };
+            DataGridViewStyler.ApplyStyle(_gvCanteen);
 
             tab.Controls.Add(_gvCanteen);
             tab.Controls.Add(topPanel);
@@ -108,7 +110,8 @@ namespace DailyMeal.UI
             var btnSave = new Button { Text = "保存", Location = new Point(370, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
             topPanel.Controls.AddRange(new Control[] { lblName, txtName, lblCanteen, cmbCanteen, btnSave });
 
-            _gvStall = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, SelectionMode = DataGridViewSelectionMode.FullRowSelect, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
+            _gvStall = new DataGridView { Dock = DockStyle.Fill };
+            DataGridViewStyler.ApplyStyle(_gvStall);
 
             tab.Controls.Add(_gvStall);
             tab.Controls.Add(topPanel);
@@ -128,7 +131,7 @@ namespace DailyMeal.UI
                         var item = stalls.Find(x => x.Id == editingId);
                         if (item != null) { item.StallName = txtName.Text; item.CanteenId = canteen.Id; await _bll.UpdateStallAsync(item); }
                     }
-                    else { await _bll.AddStallAsync(txtName.Text, canteen.Id, ""); }
+                    else { await _bll.AddStallAsync(txtName.Text, canteen.Id); }
                     Program.SoundBLL.PlayAsync(SoundType.Success);
                     editingId = 0; txtName.Text = "";
                     await RefreshStalls();
@@ -171,7 +174,8 @@ namespace DailyMeal.UI
             var btnSave = new Button { Text = "保存", Location = new Point(300, y), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
             topPanel.Controls.AddRange(new Control[] { lblName, txtName, lblStall, cmbStall, lblPrice, txtPrice, lblCalorie, txtCalorie, btnSave });
 
-            _gvMeal = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, SelectionMode = DataGridViewSelectionMode.FullRowSelect, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
+            _gvMeal = new DataGridView { Dock = DockStyle.Fill };
+            DataGridViewStyler.ApplyStyle(_gvMeal);
 
             tab.Controls.Add(_gvMeal);
             tab.Controls.Add(topPanel);
@@ -192,7 +196,7 @@ namespace DailyMeal.UI
                         var meal = new Meal { Id = editingId, MealName = txtName.Text, StallId = stall.Id, Price = decimal.Parse(txtPrice.Text), Calorie = decimal.Parse(txtCalorie.Text), IsSystem = false };
                         await _bll.UpdateMealAsync(meal);
                     }
-                    else { await _bll.AddMealAsync(txtName.Text, stall.Id, "", decimal.Parse(txtCalorie.Text), decimal.Parse(txtPrice.Text), ""); }
+                    else { await _bll.AddMealAsync(txtName.Text, stall.Id, decimal.Parse(txtCalorie.Text), decimal.Parse(txtPrice.Text), ""); }
                     Program.SoundBLL.PlayAsync(SoundType.Success);
                     editingId = 0; txtName.Text = ""; txtPrice.Text = ""; txtCalorie.Text = "";
                     await RefreshMeals();

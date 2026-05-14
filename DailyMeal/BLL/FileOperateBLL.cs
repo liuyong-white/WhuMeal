@@ -88,15 +88,5 @@ namespace DailyMeal.BLL
                 catch (SQLiteException) { throw new InvalidDataException("备份文件不是有效的数据库文件"); }
             });
         }
-
-        public string CopyImageToLocalStorage(string sourcePath, string category, int entityId)
-        {
-            return ImageHelper.CopyToLocalStorage(sourcePath, category, entityId);
-        }
-
-        public void DeleteLocalImage(string localPath)
-        {
-            ImageHelper.DeleteLocalImage(localPath);
-        }
     }
 }

@@ -41,7 +41,7 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                return conn.ExecuteScalar<int>("INSERT INTO Stall (StallName, CanteenId, StallPhoto, IsSystem) VALUES (@StallName, @CanteenId, @StallPhoto, @IsSystem); SELECT last_insert_rowid();", stall);
+                return conn.ExecuteScalar<int>("INSERT INTO Stall (StallName, CanteenId, IsSystem) VALUES (@StallName, @CanteenId, @IsSystem); SELECT last_insert_rowid();", stall);
             }
         }
 
@@ -50,7 +50,7 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                conn.Execute("UPDATE Stall SET StallName = @StallName, CanteenId = @CanteenId, StallPhoto = @StallPhoto, IsSystem = @IsSystem WHERE Id = @Id", stall);
+                conn.Execute("UPDATE Stall SET StallName = @StallName, CanteenId = @CanteenId, IsSystem = @IsSystem WHERE Id = @Id", stall);
             }
         }
 

@@ -82,17 +82,12 @@ namespace DailyMeal.BLL
             return await Task.Run(() => _stallDal.GetByCanteenId(canteenId));
         }
 
-        public async Task<Stall> AddStallAsync(string name, int canteenId, string photoPath)
+        public async Task<Stall> AddStallAsync(string name, int canteenId)
         {
             return await Task.Run(() =>
             {
-                var stall = new Stall { StallName = name, CanteenId = canteenId, IsSystem = false, StallPhoto = "" };
+                var stall = new Stall { StallName = name, CanteenId = canteenId, IsSystem = false };
                 stall.Id = _stallDal.Insert(stall);
-                if (!string.IsNullOrWhiteSpace(photoPath))
-                {
-                    stall.StallPhoto = ImageHelper.CopyToLocalStorage(photoPath, "Stall", stall.Id);
-                    _stallDal.Update(stall);
-                }
                 var canteen = _canteenDal.GetById(canteenId);
                 if (canteen != null)
                 {
@@ -138,7 +133,7 @@ namespace DailyMeal.BLL
             });
         }
 
-        public async Task<Meal> AddMealAsync(string name, int stallId, string photoPath, decimal calorie, decimal price, string remark)
+        public async Task<Meal> AddMealAsync(string name, int stallId, decimal calorie, decimal price, string remark)
         {
             return await Task.Run(() =>
             {
@@ -146,18 +141,12 @@ namespace DailyMeal.BLL
                 {
                     MealName = string.IsNullOrWhiteSpace(name) ? "" : name,
                     StallId = stallId,
-                    MealPhoto = "",
                     Calorie = calorie,
                     Price = price,
                     Remark = remark ?? "",
                     IsSystem = false
                 };
                 meal.Id = _mealDal.Insert(meal);
-                if (!string.IsNullOrWhiteSpace(photoPath))
-                {
-                    meal.MealPhoto = ImageHelper.CopyToLocalStorage(photoPath, "Meal", meal.Id);
-                    _mealDal.Update(meal);
-                }
                 return meal;
             });
         }

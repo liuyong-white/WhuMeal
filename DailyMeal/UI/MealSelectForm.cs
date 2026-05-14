@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DailyMeal.BLL;
+using DailyMeal.DAL;
 using DailyMeal.Helper;
 using DailyMeal.Model;
 
@@ -16,8 +17,8 @@ namespace DailyMeal.UI
         private MainForm _mainForm;
         private MealSelectBLL _selectBll = new MealSelectBLL();
         private DataManageBLL _manageBll = new DataManageBLL();
+        private DinnerBuddyDAL _buddyDal = new DinnerBuddyDAL();
         private CheckedListBox _candidateList;
-        private PictureBox _rollImage;
         private Label _rollName;
         private ComboBox _groupCombo;
         private Button _btnStart;
@@ -47,9 +48,7 @@ namespace DailyMeal.UI
             leftPanel.Controls.Add(lblCandidate);
 
             _rollPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            _rollImage = new PictureBox { Size = new Size(200, 200), Location = new Point(150, 50), SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.LightGray };
-            _rollName = new Label { Font = new Font("微软雅黑", 14, FontStyle.Bold), Location = new Point(100, 270), AutoSize = true, ForeColor = Color.FromArgb(0x1A, 0x6B, 0x3C) };
-            _rollPanel.Controls.Add(_rollImage);
+            _rollName = new Label { Font = new Font("微软雅黑", 14, FontStyle.Bold), Location = new Point(100, 100), AutoSize = true, ForeColor = Color.FromArgb(0x1A, 0x6B, 0x3C) };
             _rollPanel.Controls.Add(_rollName);
 
             var rightPanel = new Panel { Dock = DockStyle.Right, Width = 150, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1), Padding = new Padding(5) };
@@ -166,12 +165,6 @@ namespace DailyMeal.UI
                 var progress = new Progress<RollProgressInfo>(info =>
                 {
                     _rollName.Text = info.CurrentName ?? "";
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(info.CurrentPhoto))
-                            _rollImage.Image = Helper.ImageHelper.LoadImage(info.CurrentPhoto);
-                    }
-                    catch { }
                 });
 
                 await _selectBll.AnimateRollAsync(checkedStalls, targetIndex, progress, _cts.Token);
@@ -191,7 +184,7 @@ namespace DailyMeal.UI
             using (var dlg = new Form())
             {
                 dlg.Text = "确认选餐";
-                dlg.Size = new Size(350, 300);
+                dlg.Size = new Size(350, 420);
                 dlg.StartPosition = FormStartPosition.CenterParent;
 
                 int y = 20;
@@ -208,7 +201,20 @@ namespace DailyMeal.UI
                 var txtRemark = new TextBox { Location = new Point(100, y), Width = 150 };
                 dlg.Controls.Add(new Label { Text = "备注:", Location = new Point(20, y + 5), AutoSize = true });
                 dlg.Controls.Add(txtRemark);
-                y += 45;
+                y += 40;
+
+                dlg.Controls.Add(new Label { Text = "饭搭子:", Location = new Point(20, y), AutoSize = true });
+                y += 25;
+                var chkBuddies = new CheckedListBox { Location = new Point(30, y), Size = new Size(260, 80), CheckOnClick = true };
+                var allBuddies = _buddyDal.GetAll();
+                foreach (var buddy in allBuddies)
+                {
+                    int idx = chkBuddies.Items.Add(buddy);
+                    if (buddy.Name == "老己") chkBuddies.SetItemChecked(idx, true);
+                }
+                chkBuddies.DisplayMember = "Name";
+                dlg.Controls.Add(chkBuddies);
+                y += 90;
 
                 bool saved = false;
                 var btnOk = new Button { Text = "确认", Location = new Point(100, y), Size = new Size(80, 30) };
@@ -219,9 +225,18 @@ namespace DailyMeal.UI
                     var pv = RegexHelper.ValidatePrice(txtPrice.Text);
                     var cv = RegexHelper.ValidateCalorie(txtCalorie.Text);
                     if (!pv.isValid || !cv.isValid) { MessageBox.Show(pv.isValid ? cv.message : pv.message); return; }
+                    var buddyIds = new List<int>();
+                    for (int i = 0; i < chkBuddies.Items.Count; i++)
+                    {
+                        if (chkBuddies.GetItemChecked(i) && chkBuddies.Items[i] is DinnerBuddy b)
+                            buddyIds.Add(b.Id);
+                    }
+                    if (buddyIds.Count == 0) { MessageBox.Show("请至少选择一位饭搭子（含老己）"); return; }
                     try
                     {
-                        await _selectBll.ConfirmSelectionAsync(_selectedStall.Id, null, decimal.Parse(txtPrice.Text), decimal.Parse(txtCalorie.Text), txtRemark.Text, new List<int> { 1 });
+                        var price = string.IsNullOrWhiteSpace(txtPrice.Text) ? 0m : decimal.Parse(txtPrice.Text);
+                        var calorie = string.IsNullOrWhiteSpace(txtCalorie.Text) ? 0m : decimal.Parse(txtCalorie.Text);
+                        await _selectBll.ConfirmSelectionAsync(_selectedStall.Id, null, price, calorie, txtRemark.Text, buddyIds);
                         _ = Program.SoundBLL.PlayAsync(SoundType.Success);
                         MessageBox.Show("记录保存成功！");
                         _mainForm.LoadTodayOverview();
@@ -275,7 +290,20 @@ namespace DailyMeal.UI
             var txtRemark = new TextBox { Location = new Point(80, y), Width = 200 };
             _directPanel.Controls.Add(new Label { Text = "备注:", Location = new Point(20, y + 5), AutoSize = true });
             _directPanel.Controls.Add(txtRemark);
-            y += 45;
+            y += 40;
+
+            _directPanel.Controls.Add(new Label { Text = "饭搭子:", Location = new Point(20, y), AutoSize = true });
+            y += 25;
+            var chkBuddies = new CheckedListBox { Location = new Point(30, y), Size = new Size(250, 80), CheckOnClick = true };
+            var allBuddies = _buddyDal.GetAll();
+            foreach (var buddy in allBuddies)
+            {
+                int idx = chkBuddies.Items.Add(buddy);
+                if (buddy.Name == "自己") chkBuddies.SetItemChecked(idx, true);
+            }
+            chkBuddies.DisplayMember = "Name";
+            _directPanel.Controls.Add(chkBuddies);
+            y += 90;
 
             var btnSave = new Button { Text = "保存记录", Location = new Point(80, y), Size = new Size(100, 35), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
             var btnCancel = new Button { Text = "取消", Location = new Point(200, y), Size = new Size(80, 35), FlatStyle = FlatStyle.Flat };
@@ -302,9 +330,18 @@ namespace DailyMeal.UI
                 var calorieVal = RegexHelper.ValidateCalorie(txtCalorie.Text);
                 if (!priceVal.isValid) { MessageBox.Show(priceVal.message); return; }
                 if (!calorieVal.isValid) { MessageBox.Show(calorieVal.message); return; }
+                var buddyIds = new List<int>();
+                for (int i = 0; i < chkBuddies.Items.Count; i++)
+                {
+                    if (chkBuddies.GetItemChecked(i) && chkBuddies.Items[i] is DinnerBuddy b)
+                        buddyIds.Add(b.Id);
+                }
+                if (buddyIds.Count == 0) { MessageBox.Show("请至少选择一位饭搭子（含老己）"); return; }
                 try
                 {
-                    await _selectBll.ConfirmSelectionAsync(stall.Id, null, decimal.Parse(txtPrice.Text), decimal.Parse(txtCalorie.Text), txtRemark.Text, new List<int> { 1 });
+                    var price = string.IsNullOrWhiteSpace(txtPrice.Text) ? 0m : decimal.Parse(txtPrice.Text);
+                    var calorie = string.IsNullOrWhiteSpace(txtCalorie.Text) ? 0m : decimal.Parse(txtCalorie.Text);
+                    await _selectBll.ConfirmSelectionAsync(stall.Id, null, price, calorie, txtRemark.Text, buddyIds);
                     _ = Program.SoundBLL.PlayAsync(SoundType.Success);
                     MessageBox.Show("录入成功！");
                     _mainForm.LoadTodayOverview();

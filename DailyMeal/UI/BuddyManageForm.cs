@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using DailyMeal.BLL;
 using DailyMeal.Helper;
 using DailyMeal.Model;
+using DailyMeal.UI.Theme;
 
 namespace DailyMeal.UI
 {
@@ -23,28 +24,41 @@ namespace DailyMeal.UI
 
         private void InitializeComponent()
         {
-            this.BackColor = Color.FromArgb(0xFF, 0xF8, 0xE7);
+            this.BackColor = AppTheme.Background;
 
-            var topPanel = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var topPanel = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = AppTheme.Surface };
             var lblName = new Label { Text = "姓名:", Location = new Point(10, 15), AutoSize = true };
-            _txtName = new TextBox { Location = new Point(55, 12), Width = 150 };
-            var btnAdd = new Button { Text = "新增", Location = new Point(220, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            btnAdd.Click += BtnAdd_Click;
-            topPanel.Controls.AddRange(new Control[] { lblName, _txtName, btnAdd });
+            _txtName = new TextBox { Location = new Point(55, 12), Width = 120 };
+            var lblPhoto = new Label { Text = "照片:", Location = new Point(190, 15), AutoSize = true };
+            var txtPhoto = new TextBox { Location = new Point(230, 12), Width = 180, ReadOnly = true, BackColor = Color.White };
+            var btnBrowse = new Button { Text = "浏览", Location = new Point(415, 10), Size = new Size(55, 28), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnBrowse.Click += (s, e) =>
+            {
+                using (var dlg = new OpenFileDialog())
+                {
+                    dlg.Filter = "图片文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
+                    dlg.Title = "选择照片";
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                        txtPhoto.Text = dlg.FileName;
+                }
+            };
+            var btnAdd = new Button { Text = "新增", Location = new Point(480, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnAdd.Click += (s, e) => BtnAdd_Click(s, e, txtPhoto.Text);
+            topPanel.Controls.AddRange(new Control[] { lblName, _txtName, lblPhoto, txtPhoto, btnBrowse, btnAdd });
 
-            _cardPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(0xFF, 0xF8, 0xE7), Padding = new Padding(10), AutoScroll = true };
+            _cardPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = AppTheme.Background, Padding = new Padding(10), AutoScroll = true };
 
             this.Controls.Add(_cardPanel);
             this.Controls.Add(topPanel);
         }
 
-        private async void BtnAdd_Click(object sender, EventArgs e)
+        private async void BtnAdd_Click(object sender, EventArgs e, string photoPath)
         {
             var (valid, msg) = RegexHelper.ValidateBuddyName(_txtName.Text);
             if (!valid) { Program.SoundBLL.PlayAsync(SoundType.Error); MessageBox.Show(msg); return; }
             try
             {
-                await _bll.AddBuddyAsync(_txtName.Text, "");
+                await _bll.AddBuddyAsync(_txtName.Text, photoPath);
                 Program.SoundBLL.PlayAsync(SoundType.Success);
                 _txtName.Text = "";
                 LoadBuddies();
@@ -56,7 +70,7 @@ namespace DailyMeal.UI
         {
             _cardPanel.Controls.Clear();
             var buddies = new DAL.DinnerBuddyDAL().GetAll();
-            var selfBuddy = buddies.Find(b => b.Name == "自己" && b.IsSystem);
+            var selfBuddy = buddies.Find(b => b.Name == "老己" && b.IsSystem);
             if (selfBuddy != null)
             {
                 _cardPanel.Controls.Add(CreateCard(selfBuddy, true));
@@ -74,17 +88,53 @@ namespace DailyMeal.UI
                 using (var dlg = new Form())
                 {
                     dlg.Text = "编辑饭搭子";
-                    dlg.Size = new Size(300, 150);
-                    var txt = new TextBox { Text = b.Name, Location = new Point(20, 20), Width = 200 };
-                    var btnOk = new Button { Text = "确定", Location = new Point(20, 60), Size = new Size(80, 30) };
-                    btnOk.Click += async (s, e2) =>
+                    dlg.Size = new Size(350, 220);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    int y = 15;
+                    dlg.Controls.Add(new Label { Text = "姓名:", Location = new Point(20, y + 5), AutoSize = true });
+                    var txt = new TextBox { Text = b.Name, Location = new Point(70, y), Width = 200 };
+                    dlg.Controls.Add(txt);
+                    y += 35;
+                    dlg.Controls.Add(new Label { Text = "照片:", Location = new Point(20, y + 5), AutoSize = true });
+                    var txtPhoto = new TextBox { Text = b.Photo, Location = new Point(70, y), Width = 200, ReadOnly = true, BackColor = Color.White };
+                    dlg.Controls.Add(txtPhoto);
+                    var btnBrowse = new Button { Text = "浏览", Location = new Point(275, y - 2), Size = new Size(50, 26), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                    btnBrowse.Click += (s2, e2) =>
+                    {
+                        using (var ofd = new OpenFileDialog())
+                        {
+                            ofd.Filter = "图片文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
+                            ofd.Title = "选择照片";
+                            if (ofd.ShowDialog() == DialogResult.OK)
+                                txtPhoto.Text = ofd.FileName;
+                        }
+                    };
+                    dlg.Controls.Add(btnBrowse);
+                    y += 45;
+                    var btnOk = new Button { Text = "确定", Location = new Point(70, y), Size = new Size(80, 30), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                    var btnCancel = new Button { Text = "取消", Location = new Point(160, y), Size = new Size(80, 30), FlatStyle = FlatStyle.Flat };
+                    btnCancel.Click += (s2, e2) => dlg.Close();
+                    btnOk.Click += async (s2, e2) =>
                     {
                         var (valid, msg) = RegexHelper.ValidateBuddyName(txt.Text);
                         if (!valid) { MessageBox.Show(msg); return; }
-                        try { b.Name = txt.Text; await _bll.UpdateBuddyAsync(b); Program.SoundBLL.PlayAsync(SoundType.Success); dlg.Close(); LoadBuddies(); }
+                        try
+                        {
+                            b.Name = txt.Text;
+                            if (!string.IsNullOrWhiteSpace(txtPhoto.Text) && txtPhoto.Text != b.Photo)
+                            {
+                                if (!string.IsNullOrWhiteSpace(b.Photo))
+                                    ImageHelper.DeleteLocalImage(b.Photo);
+                                b.Photo = ImageHelper.CopyToLocalStorage(txtPhoto.Text, "Buddy", b.Id);
+                            }
+                            await _bll.UpdateBuddyAsync(b);
+                            Program.SoundBLL.PlayAsync(SoundType.Success);
+                            dlg.Close();
+                            LoadBuddies();
+                        }
                         catch (Exception ex) { Program.SoundBLL.PlayAsync(SoundType.Error); MessageBox.Show(ex.Message); }
                     };
-                    dlg.Controls.AddRange(new Control[] { txt, btnOk });
+                    dlg.Controls.AddRange(new Control[] { btnOk, btnCancel });
                     dlg.ShowDialog();
                 }
             };

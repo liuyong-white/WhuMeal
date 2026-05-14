@@ -59,7 +59,6 @@ namespace DailyMeal.BLL
         {
             _settings.SoundEnabled = soundEnabled;
             _settings.InteractiveSoundEnabled = interactiveSoundEnabled;
-            _configRepo.SaveSettings(_settings);
         }
 
         public AppSetting GetSettings()
