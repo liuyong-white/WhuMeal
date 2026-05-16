@@ -18,8 +18,6 @@ namespace DailyMeal.UI
         private Chart _chart;
         private DataGridView _gvDetail;
         private PeriodType _currentPeriod = PeriodType.Week;
-        private int? _drillCanteenId = null;
-        private Button _btnBack;
 
         public StatisticForm(MainForm mainForm)
         {
@@ -44,9 +42,7 @@ namespace DailyMeal.UI
             _rbYear.CheckedChanged += Period_Changed;
             _rbSemester.CheckedChanged += Period_Changed;
             grpPeriod.Controls.AddRange(new Control[] { _rbWeek, _rbMonth, _rbYear, _rbSemester });
-            _btnBack = new Button { Text = "返回食堂维度", Location = new Point(350, 5), Size = new Size(110, 28), FlatStyle = FlatStyle.Flat, Visible = false };
-            _btnBack.Click += (s, e) => { _drillCanteenId = null; _btnBack.Visible = false; LoadStats(); };
-            topPanel.Controls.AddRange(new Control[] { lbl, grpPeriod, _btnBack });
+            topPanel.Controls.AddRange(new Control[] { lbl, grpPeriod });
 
             var leftPanel = new Panel { Dock = DockStyle.Left, Width = 400, BackColor = AppTheme.Surface };
             _chart = new Chart { Dock = DockStyle.Fill, BackColor = AppTheme.Surface };
@@ -70,7 +66,6 @@ namespace DailyMeal.UI
                 LegendStyle = LegendStyle.Row
             };
             _chart.Legends.Add(legend);
-            _chart.MouseClick += Chart_MouseClick;
             leftPanel.Controls.Add(_chart);
 
             _gvDetail = new DataGridView { Dock = DockStyle.Fill };
@@ -89,8 +84,6 @@ namespace DailyMeal.UI
             else if (_rbMonth.Checked) _currentPeriod = PeriodType.Month;
             else if (_rbYear.Checked) _currentPeriod = PeriodType.Year;
             else if (_rbSemester.Checked) _currentPeriod = PeriodType.Semester;
-            _drillCanteenId = null;
-            _btnBack.Visible = false;
             LoadStats();
         }
 
@@ -98,24 +91,18 @@ namespace DailyMeal.UI
         {
             try
             {
-                if (_drillCanteenId.HasValue)
-                {
-                    var result = await _bll.CalculateStallStatsAsync(_drillCanteenId.Value, _currentPeriod, null, null);
-                    UpdateChart(result.StallStats.Select(s => (s.StallName, s.Count, s.Percentage)).ToList());
-                    _gvDetail.DataSource = result.StallStats.Select(s => new { 名称 = s.StallName, 次数 = s.Count, 消费 = s.TotalExpense.ToString("F2"), 占比 = s.Percentage.ToString("F1") + "%" }).ToList();
-                }
-                else
-                {
-                    var result = await _bll.CalculateCanteenStatsAsync(_currentPeriod, null, null);
-                    UpdateChart(result.CanteenStats.Select(c => (c.CanteenName, c.Count, c.Percentage)).ToList());
-                    _gvDetail.DataSource = result.CanteenStats.Select(c => new { 名称 = c.CanteenName, 次数 = c.Count, 消费 = c.TotalExpense.ToString("F2"), 占比 = c.Percentage.ToString("F1") + "%" }).ToList();
-                }
+                var canteenResult = await _bll.CalculateCanteenStatsAsync(_currentPeriod, null, null);
+                UpdateChart(canteenResult.CanteenStats.Select(c => (c.CanteenName, c.Count, c.Percentage)).ToList());
+
+                var stallResult = await _bll.CalculateAllStallStatsAsync(_currentPeriod, null, null);
+                _gvDetail.DataSource = stallResult.StallStats.Select(s => new { 食堂 = s.CanteenName, 档口 = s.StallName, 次数 = s.Count, 消费 = s.TotalExpense.ToString("F2"), 占比 = s.Percentage.ToString("F1") + "%" }).ToList();
+
                 Program.SoundBLL.PlayAsync(SoundType.Interact);
             }
             catch { }
         }
 
-        private void UpdateChart(System.Collections.Generic.List<(string name, int count, double pct)> data)
+        private void UpdateChart(List<(string name, int count, double pct)> data)
         {
             _chart.Series["Default"].Points.Clear();
             var colors = AppTheme.ChartColors;
@@ -125,23 +112,6 @@ namespace DailyMeal.UI
                 _chart.Series["Default"].Points[i].LegendText = data[i].name;
                 _chart.Series["Default"].Points[i].Label = $"{data[i].name}\n{data[i].pct:F1}%";
                 _chart.Series["Default"].Points[i].Color = colors[i % colors.Length];
-            }
-        }
-
-        private async void Chart_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (_drillCanteenId.HasValue) return;
-            var result = _chart.HitTest(e.X, e.Y);
-            if (result.ChartElementType == ChartElementType.DataPoint)
-            {
-                int pointIndex = result.PointIndex;
-                var canteens = await new BLL.DataManageBLL().GetAllCanteensAsync();
-                if (pointIndex >= 0 && pointIndex < canteens.Count)
-                {
-                    _drillCanteenId = canteens[pointIndex].Id;
-                    _btnBack.Visible = true;
-                    LoadStats();
-                }
             }
         }
     }

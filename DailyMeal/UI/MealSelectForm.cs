@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using DailyMeal.BLL;
 using DailyMeal.DAL;
 using DailyMeal.Helper;
 using DailyMeal.Model;
+using DailyMeal.UI.Theme;
 
 namespace DailyMeal.UI
 {
@@ -19,7 +21,6 @@ namespace DailyMeal.UI
         private DataManageBLL _manageBll = new DataManageBLL();
         private DinnerBuddyDAL _buddyDal = new DinnerBuddyDAL();
         private CheckedListBox _candidateList;
-        private Label _rollName;
         private ComboBox _groupCombo;
         private Button _btnStart;
         private Button _btnConfirm;
@@ -27,8 +28,15 @@ namespace DailyMeal.UI
         private CancellationTokenSource _cts;
         private List<Stall> _allStalls = new List<Stall>();
         private Stall _selectedStall;
-        private Panel _rollPanel;
         private Panel _directPanel;
+        private Panel _slotPanel;
+        private Panel _slotViewport;
+        private List<Stall> _rollCandidates;
+        private bool _isRolling;
+        private string _currentDisplayName;
+        private float _currentAlpha = 1f;
+        private bool _isFinalResult;
+        private System.Windows.Forms.Timer _renderTimer;
 
         public MealSelectForm(MainForm mainForm)
         {
@@ -39,44 +47,127 @@ namespace DailyMeal.UI
 
         private void InitializeComponent()
         {
-            this.BackColor = Color.FromArgb(0xFF, 0xF8, 0xE7);
+            this.BackColor = AppTheme.Background;
 
-            var leftPanel = new Panel { Dock = DockStyle.Left, Width = 200, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1), Padding = new Padding(5) };
-            var lblCandidate = new Label { Text = "候选档口", Font = new Font("微软雅黑", 10, FontStyle.Bold), Dock = DockStyle.Top, Height = 30, TextAlign = ContentAlignment.MiddleCenter };
-            _candidateList = new CheckedListBox { Dock = DockStyle.Fill, Font = new Font("微软雅黑", 9f), CheckOnClick = true };
-            leftPanel.Controls.Add(_candidateList);
-            leftPanel.Controls.Add(lblCandidate);
+            _slotPanel = new Panel { Dock = DockStyle.Left, Width = 280, BackColor = AppTheme.Surface, Padding = new Padding(10, 10, 10, 10) };
+            var lblSlotTitle = new Label { Text = "摇号窗口", Font = AppTheme.SubtitleFont, ForeColor = AppTheme.Primary, Dock = DockStyle.Top, Height = 35, TextAlign = ContentAlignment.MiddleCenter };
+            _slotViewport = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            _slotViewport.Paint += SlotViewport_Paint;
+            _slotPanel.Controls.Add(_slotViewport);
+            _slotPanel.Controls.Add(lblSlotTitle);
 
-            _rollPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            _rollName = new Label { Font = new Font("微软雅黑", 14, FontStyle.Bold), Location = new Point(100, 100), AutoSize = true, ForeColor = Color.FromArgb(0x1A, 0x6B, 0x3C) };
-            _rollPanel.Controls.Add(_rollName);
+            var rightPanel = new Panel { Dock = DockStyle.Right, Width = 200, BackColor = AppTheme.Surface, Padding = new Padding(5) };
+            var lblCandidate = new Label { Text = "候选档口", Font = AppTheme.HeadingFont, Dock = DockStyle.Top, Height = 30, TextAlign = ContentAlignment.MiddleCenter };
+            _candidateList = new CheckedListBox { Dock = DockStyle.Fill, Font = AppTheme.CaptionFont, CheckOnClick = true };
+            rightPanel.Controls.Add(_candidateList);
+            rightPanel.Controls.Add(lblCandidate);
 
-            var rightPanel = new Panel { Dock = DockStyle.Right, Width = 150, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1), Padding = new Padding(5) };
-            var lblGroup = new Label { Text = "选餐分组", Font = new Font("微软雅黑", 9, FontStyle.Bold), Dock = DockStyle.Top, Height = 25 };
+            var groupPanel = new Panel { Dock = DockStyle.Right, Width = 160, BackColor = AppTheme.Surface, Padding = new Padding(5) };
+            var lblGroup = new Label { Text = "选餐分组", Font = AppTheme.HeadingFont, Dock = DockStyle.Top, Height = 25 };
             _groupCombo = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList };
             _groupCombo.SelectedIndexChanged += GroupCombo_SelectedIndexChanged;
             var btnAddGroup = new Button { Text = "管理分组", Dock = DockStyle.Top, Height = 30, FlatStyle = FlatStyle.Flat };
             btnAddGroup.Click += BtnAddGroup_Click;
-            rightPanel.Controls.Add(btnAddGroup);
-            rightPanel.Controls.Add(_groupCombo);
-            rightPanel.Controls.Add(lblGroup);
+            groupPanel.Controls.Add(btnAddGroup);
+            groupPanel.Controls.Add(_groupCombo);
+            groupPanel.Controls.Add(lblGroup);
 
-            var bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 50, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            _btnStart = new Button { Text = "开始选餐", Size = new Size(100, 35), Location = new Point(50, 8), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            _btnConfirm = new Button { Text = "确认选餐", Size = new Size(100, 35), Location = new Point(170, 8), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0xF5, 0xA6, 0x23), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1), Enabled = false };
-            _btnDirect = new Button { Text = "直接录入", Size = new Size(100, 35), Location = new Point(290, 8), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 50, BackColor = AppTheme.Surface };
+            _btnStart = new Button { Text = "开始选餐", Size = new Size(100, 35), Location = new Point(50, 8) };
+            ButtonStyler.ApplyPrimary(_btnStart);
+            _btnConfirm = new Button { Text = "确认选餐", Size = new Size(100, 35), Location = new Point(170, 8), Enabled = false };
+            ButtonStyler.ApplyAccent(_btnConfirm);
+            _btnDirect = new Button { Text = "直接录入", Size = new Size(100, 35), Location = new Point(290, 8) };
+            ButtonStyler.ApplyPrimary(_btnDirect);
             _btnStart.Click += BtnStart_Click;
             _btnConfirm.Click += BtnConfirm_Click;
             _btnDirect.Click += BtnDirect_Click;
             bottomPanel.Controls.AddRange(new Control[] { _btnStart, _btnConfirm, _btnDirect });
 
-            _directPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1), Visible = false };
+            _directPanel = new Panel { Dock = DockStyle.Fill, BackColor = AppTheme.Surface, Visible = false };
 
-            this.Controls.Add(_rollPanel);
             this.Controls.Add(_directPanel);
-            this.Controls.Add(leftPanel);
+            this.Controls.Add(groupPanel);
             this.Controls.Add(rightPanel);
+            this.Controls.Add(_slotPanel);
             this.Controls.Add(bottomPanel);
+
+            _renderTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _renderTimer.Tick += (s, e) => { if (_isRolling) _slotViewport.Invalidate(); };
+            _renderTimer.Start();
+        }
+
+        private void SlotViewport_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            int w = _slotViewport.ClientSize.Width;
+            int h = _slotViewport.ClientSize.Height;
+            int cx = w / 2;
+            int cy = h / 2;
+
+            if (_rollCandidates == null || _rollCandidates.Count == 0)
+            {
+                using (var font = new Font("微软雅黑", 10, FontStyle.Regular))
+                using (var brush = new SolidBrush(AppTheme.TextMuted))
+                {
+                    var txt = "选择分组后点击开始选餐";
+                    var sz = g.MeasureString(txt, font);
+                    g.DrawString(txt, font, brush, cx - sz.Width / 2, cy - sz.Height / 2);
+                }
+                return;
+            }
+
+            if (_isFinalResult && !string.IsNullOrEmpty(_currentDisplayName))
+            {
+                using (var bgBrush = new LinearGradientBrush(new Point(cx - 80, cy - 40), new Point(cx + 80, cy + 40), Color.FromArgb(0x1A, 0x6B, 0x3C), Color.FromArgb(0x2E, 0x8B, 0x57)))
+                {
+                    g.FillRoundedRectangle(bgBrush, cx - 110, cy - 45, 220, 90, 12);
+                }
+                using (var borderPen = new Pen(Color.FromArgb(0x10, 0x48, 0x28), 2))
+                {
+                    g.DrawRoundedRectangle(borderPen, cx - 110, cy - 45, 220, 90, 12);
+                }
+                using (var font = new Font("微软雅黑", 16, FontStyle.Bold))
+                using (var brush = new SolidBrush(Color.White))
+                {
+                    var sz = g.MeasureString(_currentDisplayName, font);
+                    g.DrawString(_currentDisplayName, font, brush, cx - sz.Width / 2, cy - sz.Height / 2);
+                }
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_currentDisplayName))
+            {
+                using (var font = new Font("微软雅黑", 10, FontStyle.Regular))
+                using (var brush = new SolidBrush(AppTheme.TextMuted))
+                {
+                    var txt = "点击\"开始选餐\"抽号";
+                    var sz = g.MeasureString(txt, font);
+                    g.DrawString(txt, font, brush, cx - sz.Width / 2, cy - sz.Height / 2);
+                }
+                return;
+            }
+
+            int alpha = (int)(255 * _currentAlpha);
+            alpha = Math.Max(0, Math.Min(255, alpha));
+
+            using (var font = new Font("微软雅黑", 20, FontStyle.Bold))
+            {
+                var sz = g.MeasureString(_currentDisplayName, font);
+                float textX = cx - sz.Width / 2;
+                float textY = cy - sz.Height / 2;
+
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(alpha / 4, 0, 0, 0)))
+                {
+                    g.DrawString(_currentDisplayName, font, shadowBrush, textX + 2, textY + 2);
+                }
+                using (var textBrush = new SolidBrush(Color.FromArgb(alpha, 0x1A, 0x6B, 0x3C)))
+                {
+                    g.DrawString(_currentDisplayName, font, textBrush, textX, textY);
+                }
+            }
         }
 
         private async Task LoadDataAsync()
@@ -123,12 +214,20 @@ namespace DailyMeal.UI
 
         private async void GroupCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_groupCombo.SelectedIndex <= 0) return;
-            var group = _groupCombo.SelectedItem as SelectionGroup;
-            if (group == null) return;
+            if (_groupCombo.SelectedIndex < 0) return;
             try
             {
-                var stalls = await _selectBll.GetGroupStallsAsync(group.Id);
+                List<Stall> stalls;
+                if (_groupCombo.SelectedIndex == 0)
+                {
+                    stalls = _allStalls;
+                }
+                else
+                {
+                    var group = _groupCombo.SelectedItem as SelectionGroup;
+                    if (group == null) return;
+                    stalls = await _selectBll.GetGroupStallsAsync(group.Id);
+                }
                 for (int i = 0; i < _candidateList.Items.Count; i++)
                     _candidateList.SetItemChecked(i, false);
                 for (int i = 0; i < _allStalls.Count; i++)
@@ -136,6 +235,11 @@ namespace DailyMeal.UI
                     if (stalls.Any(s => s.Id == _allStalls[i].Id))
                         _candidateList.SetItemChecked(i, true);
                 }
+                _rollCandidates = stalls;
+                _currentDisplayName = null;
+                _isFinalResult = false;
+                _isRolling = false;
+                _slotViewport.Invalidate();
             }
             catch { }
         }
@@ -148,6 +252,8 @@ namespace DailyMeal.UI
                 if (_candidateList.GetItemChecked(i) && i < _allStalls.Count)
                     checkedStalls.Add(_allStalls[i]);
             }
+            if (checkedStalls.Count == 0 && _rollCandidates != null && _rollCandidates.Count > 0)
+                checkedStalls = _rollCandidates;
             if (checkedStalls.Count == 0)
             {
                 _ = Program.SoundBLL.PlayAsync(SoundType.Error);
@@ -156,24 +262,37 @@ namespace DailyMeal.UI
             }
 
             _btnStart.Enabled = false;
+            _btnConfirm.Enabled = false;
             _cts = new CancellationTokenSource();
+            _rollCandidates = checkedStalls;
+            _isRolling = true;
+            _isFinalResult = false;
 
             try
             {
                 var random = new Random();
                 int targetIndex = random.Next(checkedStalls.Count);
-                var progress = new Progress<RollProgressInfo>(info =>
+
+                var progress = new Progress<RollStepInfo>(info =>
                 {
-                    _rollName.Text = info.CurrentName ?? "";
+                    _currentDisplayName = info.DisplayName;
+                    _currentAlpha = info.Alpha;
+                    _slotViewport.Invalidate();
                 });
 
-                await _selectBll.AnimateRollAsync(checkedStalls, targetIndex, progress, _cts.Token);
+                await _selectBll.AnimateFlashRollAsync(checkedStalls, targetIndex, progress, _cts.Token);
+
+                _isRolling = false;
+                _isFinalResult = true;
+                _currentDisplayName = $"{checkedStalls[targetIndex].CanteenName} - {checkedStalls[targetIndex].StallName}";
+                _currentAlpha = 1f;
+                _slotViewport.Invalidate();
                 _selectedStall = checkedStalls[targetIndex];
                 _btnConfirm.Enabled = true;
                 _ = Program.SoundBLL.PlayAsync(SoundType.Interact);
             }
-            catch (OperationCanceledException) { }
-            catch { }
+            catch (OperationCanceledException) { _isRolling = false; _isFinalResult = false; _currentDisplayName = null; _slotViewport.Invalidate(); }
+            catch (Exception ex) { _isRolling = false; _isFinalResult = false; _currentDisplayName = null; _slotViewport.Invalidate(); MessageBox.Show($"选餐异常：{ex.Message}"); }
             finally { _btnStart.Enabled = true; }
         }
 
@@ -253,13 +372,16 @@ namespace DailyMeal.UI
                 {
                     _btnConfirm.Enabled = false;
                     _selectedStall = null;
+                    _isFinalResult = false;
+                    _currentDisplayName = null;
+                    _slotViewport.Invalidate();
                 }
             }
         }
 
         private void BtnDirect_Click(object sender, EventArgs e)
         {
-            _rollPanel.Visible = false;
+            _slotPanel.Visible = false;
             _directPanel.Visible = true;
             BuildDirectPanel();
         }
@@ -305,9 +427,10 @@ namespace DailyMeal.UI
             _directPanel.Controls.Add(chkBuddies);
             y += 90;
 
-            var btnSave = new Button { Text = "保存记录", Location = new Point(80, y), Size = new Size(100, 35), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var btnSave = new Button { Text = "保存记录", Location = new Point(80, y), Size = new Size(100, 35) };
+            ButtonStyler.ApplyPrimary(btnSave);
             var btnCancel = new Button { Text = "取消", Location = new Point(200, y), Size = new Size(80, 35), FlatStyle = FlatStyle.Flat };
-            btnCancel.Click += (s, e2) => { _directPanel.Visible = false; _rollPanel.Visible = true; };
+            btnCancel.Click += (s, e2) => { _directPanel.Visible = false; _slotPanel.Visible = true; };
             _directPanel.Controls.Add(btnSave);
             _directPanel.Controls.Add(btnCancel);
 
@@ -345,7 +468,7 @@ namespace DailyMeal.UI
                     _ = Program.SoundBLL.PlayAsync(SoundType.Success);
                     MessageBox.Show("录入成功！");
                     _mainForm.LoadTodayOverview();
-                    _directPanel.Visible = false; _rollPanel.Visible = true;
+                    _directPanel.Visible = false; _slotPanel.Visible = true;
                 }
                 catch (Exception ex) { _ = Program.SoundBLL.PlayAsync(SoundType.Error); MessageBox.Show($"录入失败：{ex.Message}"); }
             };
@@ -374,7 +497,8 @@ namespace DailyMeal.UI
 
                 var lblName = new Label { Text = "分组名称:", Location = new Point(20, 20), AutoSize = true };
                 var txtName = new TextBox { Location = new Point(100, 17), Width = 180 };
-                var btnSave = new Button { Text = "新增", Location = new Point(290, 15), Size = new Size(60, 25), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+                var btnSave = new Button { Text = "新增", Location = new Point(290, 15), Size = new Size(60, 25) };
+                ButtonStyler.ApplyPrimary(btnSave);
                 var listBox = new ListBox { Location = new Point(20, 50), Size = new Size(360, 260) };
 
                 LoadGroupList(listBox);

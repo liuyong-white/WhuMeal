@@ -132,17 +132,6 @@ CREATE TABLE IF NOT EXISTS Stall (
     FOREIGN KEY (CanteenId) REFERENCES Canteen(Id)
 );
 
-CREATE TABLE IF NOT EXISTS Meal (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    MealName VARCHAR(50) DEFAULT '',
-    StallId INTEGER NOT NULL,
-    Calorie REAL NOT NULL,
-    Price REAL NOT NULL,
-    Remark VARCHAR(200) DEFAULT '',
-    IsSystem BOOLEAN NOT NULL DEFAULT 0,
-    FOREIGN KEY (StallId) REFERENCES Stall(Id)
-);
-
 CREATE TABLE IF NOT EXISTS DinnerBuddy (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Name VARCHAR(20) NOT NULL,
@@ -158,8 +147,7 @@ CREATE TABLE IF NOT EXISTS MealRecord (
     Calorie REAL NOT NULL,
     Price REAL NOT NULL,
     Remark VARCHAR(200) DEFAULT '',
-    FOREIGN KEY (StallId) REFERENCES Stall(Id),
-    FOREIGN KEY (MealId) REFERENCES Meal(Id)
+    FOREIGN KEY (StallId) REFERENCES Stall(Id)
 );
 
 CREATE TABLE IF NOT EXISTS MealRecordBuddy (
@@ -189,9 +177,7 @@ CREATE TABLE IF NOT EXISTS SelectionGroupStall (
         {
             return @"
 CREATE INDEX IF NOT EXISTS idx_stall_canteen ON Stall(CanteenId);
-CREATE INDEX IF NOT EXISTS idx_meal_stall ON Meal(StallId);
 CREATE INDEX IF NOT EXISTS idx_record_stall ON MealRecord(StallId);
-CREATE INDEX IF NOT EXISTS idx_record_meal ON MealRecord(MealId);
 CREATE INDEX IF NOT EXISTS idx_record_time ON MealRecord(RecordTime);
 CREATE INDEX IF NOT EXISTS idx_mrb_record ON MealRecordBuddy(RecordId);
 CREATE INDEX IF NOT EXISTS idx_mrb_buddy ON MealRecordBuddy(BuddyId);

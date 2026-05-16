@@ -14,7 +14,6 @@ namespace DailyMeal.BLL
     {
         private CanteenDAL _canteenDal = new CanteenDAL();
         private StallDAL _stallDal = new StallDAL();
-        private MealDAL _mealDal = new MealDAL();
         private DinnerBuddyDAL _buddyDal = new DinnerBuddyDAL();
         private MealRecordDAL _recordDal = new MealRecordDAL();
         private MealRecordBuddyDAL _recordBuddyDal = new MealRecordBuddyDAL();
@@ -65,7 +64,7 @@ namespace DailyMeal.BLL
                         if (recordIds.Count > 0)
                             _recordBuddyDal.DeleteByRecordIds(recordIds, conn, trans);
                         _recordDal.DeleteByStallIds(stallIds, conn, trans);
-                        _mealDal.NullifyMealIdByStallIds(stallIds, conn, trans);
+                        conn.Execute("UPDATE MealRecord SET MealId = NULL WHERE StallId IN @StallIds", new { StallIds = stallIds }, trans);
                         conn.Execute("DELETE FROM Meal WHERE StallId IN @StallIds", new { StallIds = stallIds }, trans);
                     }
                     _stallDal.DeleteByCanteenId(canteenId, conn, trans);
@@ -124,51 +123,12 @@ namespace DailyMeal.BLL
                     if (recordIds.Count > 0)
                         _recordBuddyDal.DeleteByRecordIds(recordIds, conn, trans);
                     _recordDal.DeleteByStallIds(stallIds, conn, trans);
-                    _mealDal.NullifyMealIdByStallIds(stallIds, conn, trans);
+                    conn.Execute("UPDATE MealRecord SET MealId = NULL WHERE StallId = @StallId", new { StallId = stallId }, trans);
                     conn.Execute("DELETE FROM Meal WHERE StallId = @StallId", new { StallId = stallId }, trans);
                     conn.Execute("DELETE FROM Stall WHERE Id = @Id", new { Id = stallId }, trans);
                 });
 
                 return impact;
-            });
-        }
-
-        public async Task<Meal> AddMealAsync(string name, int stallId, decimal calorie, decimal price, string remark)
-        {
-            return await Task.Run(() =>
-            {
-                var meal = new Meal
-                {
-                    MealName = string.IsNullOrWhiteSpace(name) ? "" : name,
-                    StallId = stallId,
-                    Calorie = calorie,
-                    Price = price,
-                    Remark = remark ?? "",
-                    IsSystem = false
-                };
-                meal.Id = _mealDal.Insert(meal);
-                return meal;
-            });
-        }
-
-        public async Task UpdateMealAsync(Meal meal)
-        {
-            await Task.Run(() =>
-            {
-                meal.IsSystem = false;
-                _mealDal.Update(meal);
-            });
-        }
-
-        public async Task DeleteMealAsync(int mealId)
-        {
-            await Task.Run(() =>
-            {
-                _baseDal.ExecuteInTransaction((conn, trans) =>
-                {
-                    conn.Execute("UPDATE MealRecord SET MealId = NULL WHERE MealId = @MealId", new { MealId = mealId }, trans);
-                    conn.Execute("DELETE FROM Meal WHERE Id = @Id", new { Id = mealId }, trans);
-                });
             });
         }
 
@@ -217,7 +177,6 @@ namespace DailyMeal.BLL
                 info.StallCount = stallIds.Count;
                 if (stallIds.Count > 0)
                 {
-                    info.MealCount = _mealDal.GetMealIdsByStallIds(stallIds).Count;
                     info.RecordCount = _recordDal.GetCountByStallIds(stallIds);
                     var recordIds = _recordDal.GetRecordIdsByStallIds(stallIds);
                     info.BuddyLinkCount = recordIds.Count > 0 ? _recordBuddyDal.GetCountByRecordIds(recordIds) : 0;
@@ -227,7 +186,6 @@ namespace DailyMeal.BLL
             else if (entityType == "Stall")
             {
                 var stallIds = new List<int> { entityId };
-                info.MealCount = _mealDal.GetCountByStallId(entityId);
                 info.RecordCount = _recordDal.GetCountByStallIds(stallIds);
                 var recordIds = _recordDal.GetRecordIdsByStallIds(stallIds);
                 info.BuddyLinkCount = recordIds.Count > 0 ? _recordBuddyDal.GetCountByRecordIds(recordIds) : 0;

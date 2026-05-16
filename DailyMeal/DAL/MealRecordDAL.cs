@@ -15,11 +15,10 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                return conn.Query<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName, m.MealName 
+                return conn.Query<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName
                     FROM MealRecord r 
                     LEFT JOIN Stall s ON r.StallId = s.Id 
                     LEFT JOIN Canteen c ON s.CanteenId = c.Id 
-                    LEFT JOIN Meal m ON r.MealId = m.Id 
                     ORDER BY r.RecordTime DESC").AsList();
             }
         }
@@ -29,11 +28,10 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                return conn.Query<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName, m.MealName 
+                return conn.Query<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName
                     FROM MealRecord r 
                     LEFT JOIN Stall s ON r.StallId = s.Id 
                     LEFT JOIN Canteen c ON s.CanteenId = c.Id 
-                    LEFT JOIN Meal m ON r.MealId = m.Id 
                     WHERE r.RecordTime >= @Start AND r.RecordTime < @End 
                     ORDER BY r.RecordTime DESC", new { Start = start, End = end }).AsList();
             }
@@ -44,11 +42,10 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                return conn.Query<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName, m.MealName 
+                return conn.Query<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName
                     FROM MealRecord r 
                     LEFT JOIN Stall s ON r.StallId = s.Id 
                     LEFT JOIN Canteen c ON s.CanteenId = c.Id 
-                    LEFT JOIN Meal m ON r.MealId = m.Id 
                     WHERE r.StallId IN @StallIds 
                     ORDER BY r.RecordTime DESC", new { StallIds = stallIds }).AsList();
             }
@@ -59,11 +56,10 @@ namespace DailyMeal.DAL
             using (var conn = _base.GetConnection())
             {
                 conn.Open();
-                return conn.QueryFirstOrDefault<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName, m.MealName 
+                return conn.QueryFirstOrDefault<MealRecord>(@"SELECT r.*, s.StallName, s.CanteenId, c.CanteenName
                     FROM MealRecord r 
                     LEFT JOIN Stall s ON r.StallId = s.Id 
                     LEFT JOIN Canteen c ON s.CanteenId = c.Id 
-                    LEFT JOIN Meal m ON r.MealId = m.Id 
                     WHERE r.Id = @Id", new { Id = id });
             }
         }

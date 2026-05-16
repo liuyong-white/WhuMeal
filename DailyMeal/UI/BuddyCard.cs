@@ -81,25 +81,17 @@ namespace DailyMeal.UI
                     Text = "编辑",
                     Location = new Point(15, 145),
                     Size = new Size(55, 28),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = AppTheme.Primary,
-                    ForeColor = Color.White,
-                    Font = AppTheme.CaptionFont,
-                    Cursor = Cursors.Hand
+                    Font = AppTheme.CaptionFont
                 };
-                _btnEdit.FlatAppearance.BorderSize = 0;
+                ButtonStyler.ApplyPrimary(_btnEdit);
                 _btnDelete = new Button
                 {
                     Text = "删除",
                     Location = new Point(80, 145),
                     Size = new Size(55, 28),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = AppTheme.Danger,
-                    ForeColor = Color.White,
-                    Font = AppTheme.CaptionFont,
-                    Cursor = Cursors.Hand
+                    Font = AppTheme.CaptionFont
                 };
-                _btnDelete.FlatAppearance.BorderSize = 0;
+                ButtonStyler.ApplyDanger(_btnDelete);
                 _btnEdit.Click += (s, e) => EditClicked?.Invoke(_buddy);
                 _btnDelete.Click += (s, e) => DeleteClicked?.Invoke(_buddy);
                 _cardPanel.Controls.Add(_btnEdit);

@@ -113,8 +113,10 @@ namespace DailyMeal.UI
                     Tag = i,
                     Cursor = Cursors.Hand
                 };
-                btn.FlatAppearance.MouseOverBackColor = AppTheme.PrimaryLight;
-                btn.FlatAppearance.MouseDownBackColor = AppTheme.PrimaryDark;
+                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(0xE8, 0xF5, 0xE9);
+                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(0xC8, 0xE6, 0xC9);
+                btn.MouseEnter += NavButton_MouseEnter;
+                btn.MouseLeave += NavButton_MouseLeave;
                 btn.Click += NavButton_Click;
                 _navPanel.Controls.Add(btn);
                 _navButtons[i] = btn;
@@ -128,16 +130,34 @@ namespace DailyMeal.UI
             SwitchToForm(index);
         }
 
+        private void NavButton_MouseEnter(object sender, EventArgs e)
+        {
+            var btn = (Button)sender;
+            if (_currentNavIndex >= 0 && _currentNavIndex < _navButtons.Length && btn == _navButtons[_currentNavIndex])
+                return;
+            btn.ForeColor = AppTheme.Primary;
+        }
+
+        private void NavButton_MouseLeave(object sender, EventArgs e)
+        {
+            var btn = (Button)sender;
+            if (_currentNavIndex >= 0 && _currentNavIndex < _navButtons.Length && btn == _navButtons[_currentNavIndex])
+                return;
+            btn.ForeColor = Color.White;
+        }
+
         public void SwitchToForm(int index)
         {
             if (_currentNavIndex >= 0 && _currentNavIndex < _navButtons.Length)
             {
                 _navButtons[_currentNavIndex].BackColor = Color.Transparent;
+                _navButtons[_currentNavIndex].ForeColor = Color.White;
                 _navButtons[_currentNavIndex].Font = AppTheme.BodyFont;
             }
 
             _currentNavIndex = index;
-            _navButtons[index].BackColor = AppTheme.Accent;
+            _navButtons[index].BackColor = Color.FromArgb(0xE8, 0xF5, 0xE9);
+            _navButtons[index].ForeColor = AppTheme.Primary;
             _navButtons[index].Font = new Font("微软雅黑", 10f, FontStyle.Bold);
 
             if (_currentForm != null)

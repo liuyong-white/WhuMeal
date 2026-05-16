@@ -31,7 +31,8 @@ namespace DailyMeal.UI
             _txtName = new TextBox { Location = new Point(55, 12), Width = 120 };
             var lblPhoto = new Label { Text = "照片:", Location = new Point(190, 15), AutoSize = true };
             var txtPhoto = new TextBox { Location = new Point(230, 12), Width = 180, ReadOnly = true, BackColor = Color.White };
-            var btnBrowse = new Button { Text = "浏览", Location = new Point(415, 10), Size = new Size(55, 28), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+            var btnBrowse = new Button { Text = "浏览", Location = new Point(415, 10), Size = new Size(55, 28) };
+            ButtonStyler.ApplyPrimary(btnBrowse);
             btnBrowse.Click += (s, e) =>
             {
                 using (var dlg = new OpenFileDialog())
@@ -42,7 +43,8 @@ namespace DailyMeal.UI
                         txtPhoto.Text = dlg.FileName;
                 }
             };
-            var btnAdd = new Button { Text = "新增", Location = new Point(480, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            var btnAdd = new Button { Text = "新增", Location = new Point(480, 10), Size = new Size(70, 28) };
+            ButtonStyler.ApplyAccent(btnAdd);
             btnAdd.Click += (s, e) => BtnAdd_Click(s, e, txtPhoto.Text);
             topPanel.Controls.AddRange(new Control[] { lblName, _txtName, lblPhoto, txtPhoto, btnBrowse, btnAdd });
 
@@ -98,7 +100,8 @@ namespace DailyMeal.UI
                     dlg.Controls.Add(new Label { Text = "照片:", Location = new Point(20, y + 5), AutoSize = true });
                     var txtPhoto = new TextBox { Text = b.Photo, Location = new Point(70, y), Width = 200, ReadOnly = true, BackColor = Color.White };
                     dlg.Controls.Add(txtPhoto);
-                    var btnBrowse = new Button { Text = "浏览", Location = new Point(275, y - 2), Size = new Size(50, 26), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                    var btnBrowse = new Button { Text = "浏览", Location = new Point(275, y - 2), Size = new Size(50, 26) };
+                    ButtonStyler.ApplyPrimary(btnBrowse);
                     btnBrowse.Click += (s2, e2) =>
                     {
                         using (var ofd = new OpenFileDialog())
@@ -111,7 +114,8 @@ namespace DailyMeal.UI
                     };
                     dlg.Controls.Add(btnBrowse);
                     y += 45;
-                    var btnOk = new Button { Text = "确定", Location = new Point(70, y), Size = new Size(80, 30), FlatStyle = FlatStyle.Flat, BackColor = AppTheme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                    var btnOk = new Button { Text = "确定", Location = new Point(70, y), Size = new Size(80, 30) };
+                    ButtonStyler.ApplyPrimary(btnOk);
                     var btnCancel = new Button { Text = "取消", Location = new Point(160, y), Size = new Size(80, 30), FlatStyle = FlatStyle.Flat };
                     btnCancel.Click += (s2, e2) => dlg.Close();
                     btnOk.Click += async (s2, e2) =>

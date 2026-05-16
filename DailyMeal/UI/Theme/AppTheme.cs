@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Windows.Forms;
 
 namespace DailyMeal.UI.Theme
 {
@@ -77,5 +78,41 @@ namespace DailyMeal.UI.Theme
         public Color ForeColor { get; set; }
         public Color HoverColor { get; set; }
         public Color PressColor { get; set; }
+    }
+
+    public static class ButtonStyler
+    {
+        public static void ApplyPrimary(Button btn)
+        {
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.BackColor = AppTheme.Primary;
+            btn.ForeColor = Color.White;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = AppTheme.PrimaryLight;
+            btn.FlatAppearance.MouseDownBackColor = AppTheme.PrimaryDark;
+            btn.Cursor = Cursors.Hand;
+        }
+
+        public static void ApplyAccent(Button btn)
+        {
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.BackColor = AppTheme.Accent;
+            btn.ForeColor = Color.White;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = AppTheme.AccentLight;
+            btn.FlatAppearance.MouseDownBackColor = AppTheme.Accent;
+            btn.Cursor = Cursors.Hand;
+        }
+
+        public static void ApplyDanger(Button btn)
+        {
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.BackColor = AppTheme.Danger;
+            btn.ForeColor = Color.White;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(0xC8, 0x23, 0x33);
+            btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(0xBD, 0x21, 0x30);
+            btn.Cursor = Cursors.Hand;
+        }
     }
 }

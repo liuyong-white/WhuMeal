@@ -31,45 +31,26 @@ namespace DailyMeal.BLL
         {
             await Task.Run(async () =>
             {
-                int totalSteps = 30 + _random.Next(10);
-                int fastSteps = totalSteps / 2;
-                int midSteps = totalSteps / 4;
-                int currentIndex = 0;
+                int extraRounds = 3 + _random.Next(2);
+                int totalSteps = extraRounds * candidates.Count + targetIndex;
+                int minDelay = 40;
+                int maxDelay = 300;
 
                 for (int i = 0; i < totalSteps; i++)
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    currentIndex = i % candidates.Count;
+                    double t = (double)i / totalSteps;
+                    int delay = (int)(minDelay + (maxDelay - minDelay) * t * t);
+                    int currentIndex = i % candidates.Count;
                     var stall = candidates[currentIndex];
                     progress?.Report(new RollProgressInfo
                     {
                         CurrentName = stall.StallName,
                         CurrentIndex = currentIndex
                     });
-
-                    int delay;
-                    if (i < fastSteps)
-                        delay = 50;
-                    else if (i < fastSteps + midSteps)
-                        delay = 50 + (i - fastSteps) * 30;
-                    else
-                        delay = 200 + (i - fastSteps - midSteps) * 80;
 
                     await Task.Delay(delay, ct);
-                }
-
-                for (int i = 0; i < candidates.Count * 2 + targetIndex; i++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    currentIndex = i % candidates.Count;
-                    var stall = candidates[currentIndex];
-                    progress?.Report(new RollProgressInfo
-                    {
-                        CurrentName = stall.StallName,
-                        CurrentIndex = currentIndex
-                    });
-                    await Task.Delay(200, ct);
                 }
 
                 var target = candidates[targetIndex];
@@ -78,6 +59,75 @@ namespace DailyMeal.BLL
                     CurrentName = target.StallName,
                     CurrentIndex = targetIndex
                 });
+            }, ct);
+        }
+
+        public async Task AnimateFlashRollAsync(List<Stall> candidates, int targetIndex, IProgress<RollStepInfo> progress, CancellationToken ct)
+        {
+            await Task.Run(async () =>
+            {
+                int count = candidates.Count;
+                int totalSteps = 7 + (count * 2 / 3) + _random.Next(3);
+                int minDelay = 60;
+                int maxDelay = 220;
+
+                for (int i = 0; i < totalSteps; i++)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    double t = (double)i / totalSteps;
+                    int delay = (int)(minDelay + (maxDelay - minDelay) * t * t);
+
+                    int idx;
+                    if (i >= totalSteps - 1)
+                    {
+                        idx = targetIndex;
+                    }
+                    else
+                    {
+                        idx = _random.Next(count);
+                    }
+
+                    var stall = candidates[idx];
+                    string name = $"{stall.CanteenName} - {stall.StallName}";
+
+                    progress?.Report(new RollStepInfo { DisplayName = name, Alpha = 1f });
+                    await Task.Delay(delay, ct);
+                }
+
+                var final = candidates[targetIndex];
+                progress?.Report(new RollStepInfo { DisplayName = $"{final.CanteenName} - {final.StallName}", Alpha = 1f });
+            }, ct);
+        }
+
+        public async Task AnimateSlotRollAsync(int itemCount, int startIndex, int targetIndex, IProgress<float> progress, CancellationToken ct)
+        {
+            await Task.Run(async () =>
+            {
+                int extraRounds = 2 + _random.Next(2);
+                float start = startIndex;
+                float end = start + extraRounds * itemCount + (targetIndex - startIndex + itemCount) % itemCount;
+                if (end <= start) end = start + itemCount;
+
+                float totalDistance = end - start;
+                int totalSteps = Math.Max((int)(totalDistance * 8), 80);
+                int minDelay = 16;
+                int maxDelay = 70;
+
+                for (int i = 0; i <= totalSteps; i++)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    double t = (double)i / totalSteps;
+                    double eased = 1 - Math.Pow(1 - t, 3);
+                    float currentScroll = (float)(start + totalDistance * eased);
+                    progress?.Report(currentScroll);
+
+                    int delay = (int)(minDelay + (maxDelay - minDelay) * t * t);
+                    await Task.Delay(delay, ct);
+                }
+
+                progress?.Report(end);
             }, ct);
         }
 

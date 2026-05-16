@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using DailyMeal.BLL;
 using DailyMeal.DAL;
 using DailyMeal.Model;
+using DailyMeal.UI.Theme;
 
 namespace DailyMeal.UI
 {
@@ -75,8 +76,10 @@ namespace DailyMeal.UI
 
             var lblData = new Label { Text = "数据维护", Font = new Font("微软雅黑", 11, FontStyle.Bold), ForeColor = Color.FromArgb(0x1A, 0x6B, 0x3C), Location = new Point(x, y), AutoSize = true };
             y += 35;
-            var btnBackup = new Button { Text = "数据备份", Location = new Point(x + 10, y), Size = new Size(100, 35), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.White };
-            var btnRestore = new Button { Text = "数据恢复", Location = new Point(x + 130, y), Size = new Size(100, 35), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0xF5, 0xA6, 0x23), ForeColor = Color.White };
+            var btnBackup = new Button { Text = "数据备份", Location = new Point(x + 10, y), Size = new Size(100, 35) };
+            ButtonStyler.ApplyPrimary(btnBackup);
+            var btnRestore = new Button { Text = "数据恢复", Location = new Point(x + 130, y), Size = new Size(100, 35) };
+            ButtonStyler.ApplyAccent(btnRestore);
             btnBackup.Click += BtnBackup_Click;
             btnRestore.Click += BtnRestore_Click;
 

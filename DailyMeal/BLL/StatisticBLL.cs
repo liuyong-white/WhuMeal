@@ -49,6 +49,44 @@ namespace DailyMeal.BLL
             });
         }
 
+        public async Task<StatisticResult> CalculateAllStallStatsAsync(PeriodType period, DateTime? startDate, DateTime? endDate)
+        {
+            return await Task.Run(() =>
+            {
+                var range = GetDateRange(period, startDate, endDate);
+                var records = _recordDal.GetByDateRange(range.start, range.end);
+                var stalls = _stallDal.GetAll();
+                var canteens = _canteenDal.GetAll();
+
+                var result = new StatisticResult
+                {
+                    TotalCount = records.Count,
+                    TotalExpense = records.Sum(r => r.Price),
+                    TotalCalorie = records.Sum(r => r.Calorie)
+                };
+
+                var grouped = records.GroupBy(r => r.StallId);
+                foreach (var g in grouped)
+                {
+                    var stall = stalls.FirstOrDefault(s => s.Id == g.Key);
+                    var canteen = stall != null ? canteens.FirstOrDefault(c => c.Id == stall.CanteenId) : null;
+                    result.StallStats.Add(new StallStat
+                    {
+                        StallId = g.Key,
+                        StallName = stall?.StallName ?? "未知档口",
+                        CanteenName = canteen?.CanteenName ?? "未知食堂",
+                        Count = g.Count(),
+                        TotalExpense = g.Sum(r => r.Price),
+                        TotalCalorie = g.Sum(r => r.Calorie),
+                        Percentage = records.Count > 0 ? (double)g.Count() / records.Count * 100 : 0
+                    });
+                }
+
+                result.StallStats = result.StallStats.OrderBy(s => s.CanteenName).ThenByDescending(s => s.Count).ToList();
+                return result;
+            });
+        }
+
         public async Task<StatisticResult> CalculateStallStatsAsync(int canteenId, PeriodType period, DateTime? startDate, DateTime? endDate)
         {
             return await Task.Run(() =>

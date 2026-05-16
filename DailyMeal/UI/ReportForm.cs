@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using DailyMeal.BLL;
 using DailyMeal.Model;
+using DailyMeal.UI.Theme;
 
 namespace DailyMeal.UI
 {
@@ -32,15 +33,18 @@ namespace DailyMeal.UI
             _cmbType.SelectedIndex = 0;
             var lblMonth = new Label { Text = "月份:", Location = new Point(200, 12), AutoSize = true };
             _dtpMonth = new DateTimePicker { Location = new Point(240, 9), Width = 150, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy年MM月" };
-            var btnGenerate = new Button { Text = "生成报告", Location = new Point(410, 6), Size = new Size(90, 30), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var btnGenerate = new Button { Text = "生成报告", Location = new Point(410, 6), Size = new Size(90, 30) };
+            ButtonStyler.ApplyPrimary(btnGenerate);
             btnGenerate.Click += BtnGenerate_Click;
             topPanel.Controls.AddRange(new Control[] { lblType, _cmbType, lblMonth, _dtpMonth, btnGenerate });
 
             _dataPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1), Padding = new Padding(20), AutoScroll = true };
 
             var bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 50, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            var btnCsv = new Button { Text = "导出CSV", Location = new Point(20, 10), Size = new Size(100, 30), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            var btnExcel = new Button { Text = "导出Excel", Location = new Point(140, 10), Size = new Size(100, 30), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0xF5, 0xA6, 0x23), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var btnCsv = new Button { Text = "导出CSV", Location = new Point(20, 10), Size = new Size(100, 30) };
+            ButtonStyler.ApplyPrimary(btnCsv);
+            var btnExcel = new Button { Text = "导出Excel", Location = new Point(140, 10), Size = new Size(100, 30) };
+            ButtonStyler.ApplyAccent(btnExcel);
             btnCsv.Click += BtnExport_Click;
             btnExcel.Click += BtnExport_Click;
             btnCsv.Tag = ExportFormat.CSV;

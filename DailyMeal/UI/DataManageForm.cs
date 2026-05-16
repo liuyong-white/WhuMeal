@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DailyMeal.BLL;
-using DailyMeal.DAL;
 using DailyMeal.Helper;
 using DailyMeal.Model;
 using DailyMeal.UI.Theme;
@@ -17,8 +16,8 @@ namespace DailyMeal.UI
         private MainForm _mainForm;
         private DataManageBLL _bll = new DataManageBLL();
         private TabControl _tabControl;
-        private DataGridView _gvCanteen, _gvStall, _gvMeal;
-        private ComboBox _cmbStallCanteen, _cmbMealStall;
+        private DataGridView _gvCanteen, _gvStall;
+        private ComboBox _cmbStallCanteen;
         private ErrorProvider _errorProvider = new ErrorProvider();
 
         public DataManageForm(MainForm mainForm)
@@ -34,13 +33,11 @@ namespace DailyMeal.UI
             _tabControl = new TabControl { Dock = DockStyle.Fill };
             var tabCanteen = new TabPage("食堂管理");
             var tabStall = new TabPage("档口管理");
-            var tabMeal = new TabPage("餐食管理");
 
             BuildCanteenTab(tabCanteen);
             BuildStallTab(tabStall);
-            BuildMealTab(tabMeal);
 
-            _tabControl.TabPages.AddRange(new TabPage[] { tabCanteen, tabStall, tabMeal });
+            _tabControl.TabPages.AddRange(new TabPage[] { tabCanteen, tabStall });
             this.Controls.Add(_tabControl);
         }
 
@@ -49,7 +46,8 @@ namespace DailyMeal.UI
             var topPanel = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
             var lblName = new Label { Text = "名称:", Location = new Point(10, 15), AutoSize = true };
             var txtName = new TextBox { Name = "txtCanteenName", Location = new Point(55, 12), Width = 200 };
-            var btnSave = new Button { Text = "保存", Location = new Point(270, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var btnSave = new Button { Text = "保存", Location = new Point(270, 10), Size = new Size(70, 28) };
+            ButtonStyler.ApplyPrimary(btnSave);
             var btnCancel = new Button { Text = "取消", Location = new Point(350, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat };
             topPanel.Controls.AddRange(new Control[] { lblName, txtName, btnSave, btnCancel });
 
@@ -107,7 +105,8 @@ namespace DailyMeal.UI
             var lblCanteen = new Label { Text = "食堂:", Location = new Point(190, 15), AutoSize = true };
             var cmbCanteen = new ComboBox { Name = "cmbStallCanteen", Location = new Point(230, 12), Width = 120, DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = "CanteenName", ValueMember = "Id" };
             _cmbStallCanteen = cmbCanteen;
-            var btnSave = new Button { Text = "保存", Location = new Point(370, 10), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
+            var btnSave = new Button { Text = "保存", Location = new Point(370, 10), Size = new Size(70, 28) };
+            ButtonStyler.ApplyPrimary(btnSave);
             topPanel.Controls.AddRange(new Control[] { lblName, txtName, lblCanteen, cmbCanteen, btnSave });
 
             _gvStall = new DataGridView { Dock = DockStyle.Fill };
@@ -157,69 +156,7 @@ namespace DailyMeal.UI
             };
         }
 
-        private void BuildMealTab(TabPage tab)
-        {
-            var topPanel = new Panel { Dock = DockStyle.Top, Height = 80, BackColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            int y = 10;
-            var lblName = new Label { Text = "名称:", Location = new Point(10, y + 5), AutoSize = true };
-            var txtName = new TextBox { Location = new Point(55, y), Width = 100 };
-            var lblStall = new Label { Text = "档口:", Location = new Point(170, y + 5), AutoSize = true };
-            var cmbStall = new ComboBox { Name = "cmbMealStall", Location = new Point(210, y), Width = 120, DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = "StallName", ValueMember = "Id" };
-            _cmbMealStall = cmbStall;
-            y += 35;
-            var lblPrice = new Label { Text = "价格:", Location = new Point(10, y + 5), AutoSize = true };
-            var txtPrice = new TextBox { Location = new Point(55, y), Width = 80 };
-            var lblCalorie = new Label { Text = "热量:", Location = new Point(150, y + 5), AutoSize = true };
-            var txtCalorie = new TextBox { Location = new Point(195, y), Width = 80 };
-            var btnSave = new Button { Text = "保存", Location = new Point(300, y), Size = new Size(70, 28), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0x1A, 0x6B, 0x3C), ForeColor = Color.FromArgb(0xFF, 0xF5, 0xE1) };
-            topPanel.Controls.AddRange(new Control[] { lblName, txtName, lblStall, cmbStall, lblPrice, txtPrice, lblCalorie, txtCalorie, btnSave });
-
-            _gvMeal = new DataGridView { Dock = DockStyle.Fill };
-            DataGridViewStyler.ApplyStyle(_gvMeal);
-
-            tab.Controls.Add(_gvMeal);
-            tab.Controls.Add(topPanel);
-
-            int editingId = 0;
-            btnSave.Click += async (s, e) =>
-            {
-                var stall = cmbStall.SelectedItem as Stall;
-                if (stall == null) { MessageBox.Show("请选择档口"); return; }
-                var pv = RegexHelper.ValidatePrice(txtPrice.Text);
-                var cv = RegexHelper.ValidateCalorie(txtCalorie.Text);
-                if (!pv.isValid) { MessageBox.Show(pv.message); return; }
-                if (!cv.isValid) { MessageBox.Show(cv.message); return; }
-                try
-                {
-                    if (editingId > 0)
-                    {
-                        var meal = new Meal { Id = editingId, MealName = txtName.Text, StallId = stall.Id, Price = decimal.Parse(txtPrice.Text), Calorie = decimal.Parse(txtCalorie.Text), IsSystem = false };
-                        await _bll.UpdateMealAsync(meal);
-                    }
-                    else { await _bll.AddMealAsync(txtName.Text, stall.Id, decimal.Parse(txtCalorie.Text), decimal.Parse(txtPrice.Text), ""); }
-                    Program.SoundBLL.PlayAsync(SoundType.Success);
-                    editingId = 0; txtName.Text = ""; txtPrice.Text = ""; txtCalorie.Text = "";
-                    await RefreshMeals();
-                }
-                catch (Exception ex) { Program.SoundBLL.PlayAsync(SoundType.Error); MessageBox.Show($"保存失败：{ex.Message}"); }
-            };
-
-            _gvMeal.CellContentClick += async (s, e) =>
-            {
-                if (e.RowIndex < 0) return;
-                var id = (int)_gvMeal.Rows[e.RowIndex].Cells["Id"].Value;
-                if (_gvMeal.Columns[e.ColumnIndex].Name == "Delete")
-                {
-                    if (MessageBox.Show("确认删除该餐食？关联就餐记录的餐食将置空。", "删除确认", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    {
-                        try { await _bll.DeleteMealAsync(id); Program.SoundBLL.PlayAsync(SoundType.Success); await RefreshMeals(); }
-                        catch (Exception ex) { Program.SoundBLL.PlayAsync(SoundType.Error); MessageBox.Show($"删除失败：{ex.Message}"); }
-                    }
-                }
-            };
-        }
-
-        private async void LoadAllData() { await RefreshCanteens(); await RefreshStalls(); await RefreshMeals(); }
+        private async void LoadAllData() { await RefreshCanteens(); await RefreshStalls(); }
 
         private async Task RefreshCanteens()
         {
@@ -236,22 +173,6 @@ namespace DailyMeal.UI
             var stalls = new List<Stall>();
             foreach (var c in canteens) stalls.AddRange(await _bll.GetStallsByCanteenAsync(c.Id));
             _gvStall.DataSource = stalls.Select(s => new { s.Id, s.StallName, 食堂 = s.CanteenName, 来源 = s.IsSystem ? "内置" : "自定义", Delete = "删除" }).ToList();
-            var prev = _cmbMealStall.SelectedValue;
-            _cmbMealStall.DataSource = stalls;
-            if (prev != null && stalls.Any(s => s.Id == (int)prev)) _cmbMealStall.SelectedValue = prev;
-        }
-
-        private async Task RefreshMeals()
-        {
-            var canteens = await _bll.GetAllCanteensAsync();
-            var meals = new List<Meal>();
-            var mealDal = new DAL.MealDAL();
-            foreach (var c in canteens)
-            {
-                var stalls = await _bll.GetStallsByCanteenAsync(c.Id);
-                foreach (var s in stalls) meals.AddRange(mealDal.GetByStallId(s.Id));
-            }
-            _gvMeal.DataSource = meals.Select(m => new { m.Id, m.MealName, 档口 = m.StallName, m.Price, m.Calorie, 来源 = m.IsSystem ? "内置" : "自定义", Delete = "删除" }).ToList();
         }
     }
 }
